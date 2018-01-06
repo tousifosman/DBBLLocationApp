@@ -11,6 +11,10 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.SearchView;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -53,9 +57,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Polyline distancePolyline;
     private PolylineOptions distancePolylineOptions;
 
+    private String[] zones;
+    private ArrayAdapter<String> branchArrayAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.activity_maps);
+
+        /**
+         * Make entire Search View clickable
+         */
+        final SearchView searchView = (SearchView)findViewById(R.id.svLocations);
+        searchView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchView.setIconified(false);
+            }
+        });
+
+        zones = new String[]{"All", "Dhaka", "Chittaging"};
+
+        branchArrayAdapter = new ArrayAdapter<String>(this, R.layout.support_simple_spinner_dropdown_item, zones);
+        branchArrayAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
+        Spinner spZones = (Spinner) findViewById(R.id.spZones);
+        spZones.setAdapter(branchArrayAdapter);
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
@@ -109,7 +136,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void initMap() {
-        setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
