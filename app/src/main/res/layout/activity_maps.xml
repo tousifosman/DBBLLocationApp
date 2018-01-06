@@ -37,7 +37,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:backgroundTint="@color/common_google_signin_btn_text_light_default"
-            android:gravity="left|center_vertical"
+            android:gravity="center_vertical|start"
             android:queryBackground="@android:color/white"
             android:queryHint="Search Branch"
             android:searchIcon="@drawable/ic_search">
@@ -49,7 +49,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0"
-            android:gravity="right" />
+            android:gravity="end" />
 
     </LinearLayout>
 
