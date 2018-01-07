@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import model.DBBLLocationAPI;
 import utils.PathJSONParser;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -84,9 +85,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Spinner spZones = (Spinner) findViewById(R.id.spZones);
         spZones.setAdapter(branchArrayAdapter);
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.INTERNET}, 1);
 
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -99,6 +105,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return;
         }
         initMap();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        DBBLLocationAPI.getInstance(this).getAllZones();
     }
 
     @Override

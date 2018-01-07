@@ -15,17 +15,16 @@ import java.net.URL;
 
 
 public class HttpConnection {
-    public String readUrl(String mapsApiDirectionsUrl) throws IOException {
+    public String readUrl(String apiUrl) throws IOException {
         String data = "";
         InputStream iStream = null;
         HttpURLConnection urlConnection = null;
         try {
-            URL url = new URL(mapsApiDirectionsUrl);
+            URL url = new URL(apiUrl);
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.connect();
             iStream = urlConnection.getInputStream();
-            BufferedReader br = new BufferedReader(new InputStreamReader(
-                    iStream));
+            BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
             StringBuffer sb = new StringBuffer();
             String line = "";
             while ((line = br.readLine()) != null) {
