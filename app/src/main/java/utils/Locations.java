@@ -1,5 +1,7 @@
 package utils;
 
+import android.util.Log;
+
 import com.google.android.gms.maps.model.LatLng;
 
 /**
@@ -7,6 +9,8 @@ import com.google.android.gms.maps.model.LatLng;
  */
 
 public class Locations {
+
+    final static String TAG = "util.Locations";
 
     public static String getMapsApiDirectionsUrl(LatLng origin, LatLng dest) {
         String str_origin = "origin="+origin.latitude+","+origin.longitude;
@@ -27,6 +31,7 @@ public class Locations {
         // Building the url to the web service
         String url = "https://maps.googleapis.com/maps/api/directions/"+output+"?"+parameters;
 
+        Log.d(TAG, String.format("getMapsApiDirectionsUrl: %s", url));
 
         return url;
 

@@ -31,6 +31,11 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
+        <meta-data
+            android:name="android.app.searchable"
+            android:resource="@xml/searchable">
+        </meta-data>
+
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps">

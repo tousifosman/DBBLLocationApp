@@ -1,20 +1,30 @@
 package com.dbbl.tousifosman.dbbllocationapp;
 
 import android.Manifest;
+import android.app.SearchManager;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -34,13 +44,21 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 import model.DBBLLocationAPI;
+import model.Request;
+import model.Zone;
 import utils.PathJSONParser;
+import utils.tools;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
+
+    private final String TAG = "MapsActivity";
+
+    private MapsActivity mapsActivityInstance;
 
     private GoogleMap mMap;
 
@@ -51,26 +69,55 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private FusedLocationProviderClient mFusedLocationClient;
     private Location mLocation;
 
-    private Marker branchMarker;
-    private MarkerOptions branchMarkerOptions;
-    private LatLng branchLatLng;
+
+    private model.Location[] branchLocations;
+    private Marker[] branchMarkers;
+    private MarkerOptions[] branchMarkerOptions;
+    private LatLng focusBranchLatLng;
+    private model.Location focusBranchLocation;
+    private double focusBranchDistance;
+
 
     private Polyline distancePolyline;
     private PolylineOptions distancePolylineOptions;
 
-    private String[] zones;
-    private ArrayAdapter<String> branchArrayAdapter;
+    private Zone[] zonesList;
+    private ArrayAdapter<Zone> branchArrayAdapter;
+    private Spinner spZones;
+
+    private ListView searchResultListView;
+    private SearchBranchAdapter searchBranchAdapter;
+    private ArrayList<model.Location> branchLocationArrayList;
+
+    private LinearLayout lyMapConstraintLayout;
+    private TextView tvNotifBName;
+    private TextView tvNotifBAddr;
+    private TextView tvNotifBDistance;
+    private Button btnNotifBClose;
+
+    private FloatingActionButton fabFocusUser;
+    private FloatingActionButton fabFocusNearestBranch;
+
+    /**
+     * O is considered as the id for All zone
+     * 'all' is the keyward for all locations
+     */
+    private int selectedZoneID = 0;
+    private String branchSearch = "all";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mapsActivityInstance = this;
         setContentView(R.layout.activity_maps);
+
+        initSPZones();
 
         /**
          * Make entire Search View clickable
          */
-        final SearchView searchView = (SearchView)findViewById(R.id.svLocations);
+        final SearchView searchView = (SearchView) findViewById(R.id.svLocations);
         searchView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -78,12 +125,103 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        zones = new String[]{"All", "Dhaka", "Chittaging"};
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
 
-        branchArrayAdapter = new ArrayAdapter<String>(this, R.layout.support_simple_spinner_dropdown_item, zones);
-        branchArrayAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
-        Spinner spZones = (Spinner) findViewById(R.id.spZones);
-        spZones.setAdapter(branchArrayAdapter);
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                searchBranchAdapter.filter(newText);
+                lyMapConstraintLayout.setVisibility(View.GONE);
+                searchResultListView.setVisibility(View.VISIBLE);
+                return false;
+            }
+        });
+
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                searchResultListView.setVisibility(View.GONE);
+                spZones.setLayoutParams(new LinearLayout.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT, AbsListView.LayoutParams.WRAP_CONTENT));
+                return false;
+            }
+        });
+
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                spZones.setLayoutParams(new LinearLayout.LayoutParams(0, AbsListView.LayoutParams.WRAP_CONTENT));
+            }
+        });
+
+//        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
+//
+//            @Override
+//            public void onFocusChange(View v, boolean hasFocus) {
+//                if (hasFocus)
+//                    spZones.setLayoutParams(new LinearLayout.LayoutParams(0, AbsListView.LayoutParams.WRAP_CONTENT));
+//                else
+//                    spZones.setLayoutParams(new LinearLayout.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT, AbsListView.LayoutParams.WRAP_CONTENT));
+//            }
+//        });
+
+        searchResultListView = (ListView) findViewById(R.id.lvSearchResult);
+
+        branchLocationArrayList = new ArrayList<>();
+        searchBranchAdapter = new SearchBranchAdapter(this, branchLocationArrayList);
+        searchResultListView.setAdapter(searchBranchAdapter);
+
+        searchResultListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                tools.hideKeyboard(mapsActivityInstance);
+                searchResultListView.setVisibility(View.GONE);
+                focusOnBranch((model.Location) searchBranchAdapter.getItem(position));
+            }
+        });
+
+        /**
+         * Initialize Map Notification
+         */
+        lyMapConstraintLayout = findViewById(R.id.lyMapNotification);
+        tvNotifBName = findViewById(R.id.tvNotifBName);
+        tvNotifBAddr = findViewById(R.id.tvNotifBAddr);
+        tvNotifBDistance = findViewById(R.id.tvNotifBDistance);
+
+        btnNotifBClose = findViewById(R.id.btnNotifBClose);
+        btnNotifBClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                lyMapConstraintLayout.setVisibility(View.GONE);
+                //updateUserLocation();
+            }
+        });
+        /**
+         * Initialize FABs
+         */
+        fabFocusUser = findViewById(R.id.fabFocusUser);
+        fabFocusUser.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                updateUserLocation();
+            }
+        });
+
+        fabFocusNearestBranch = findViewById(R.id.fabFocusNearestBranch);
+        fabFocusNearestBranch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (curLatLng != null && branchLocations != null && branchLocations.length > 0)
+                focusOnBranch(branchLocations[tools.findShortestLocation(branchLocations, curLatLng)]);
+            }
+        });
+
 
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
@@ -91,8 +229,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             ActivityCompat.requestPermissions(this,
                     new String[]{
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.INTERNET}, 1);
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.INTERNET}, 1);
 
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -108,9 +246,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        DBBLLocationAPI.getInstance(this).getAllZones();
+    protected void onResume() {
+        super.onResume();
+        requestZones();
+        requestBranchLocations();
+        updateUserLocation();
     }
 
     @Override
@@ -142,7 +282,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         mMap.setOnMarkerClickListener(this);
         // Add a marker in Sydney and move the camera
-        setBranchLocations();
+        requestBranchLocations();
         if (curLatLng != null)
             mMap.moveCamera(CameraUpdateFactory.newLatLng(curLatLng));
     }
@@ -155,8 +295,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
+        //updateUserLocation();
+    }
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+    private void updateUserLocation() {
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -164,7 +308,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
-            Log.i("Permission", "initMap: No Location Permission");
             return;
         }
         mFusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
@@ -173,46 +316,122 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.i("Location", "initMap: Location Found");
                 if (location != null) {
                     mLocation = location;
-                    updateLocation();
+                    //updateLocation();
+                    Log.i("Location", "In update location");
+                    curLatLng = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+
+                    if (userMarkerOptions == null) {
+
+                        userMarkerOptions = new MarkerOptions()
+                                .title("You")
+                                .icon(BitmapDescriptorFactory.fromBitmap(utils.Drawables.getBitmapFromVectorDrawable(mapsActivityInstance, R.drawable.ic_user)))
+                                .position(curLatLng);
+                        userMarker = mMap.addMarker(userMarkerOptions);
+                        Log.d("Marker", "updateLocation: Marker Created");
+
+                    }
+                    focusOnUser();
                 }
             }
         });
     }
 
-    private void updateLocation() {
-        curLatLng = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
-
-        Log.i("Location", "In update location");
-
-
-        if (userMarkerOptions == null) {
-
-            userMarkerOptions = new MarkerOptions()
-                    .title("You")
-                    .icon(BitmapDescriptorFactory.fromBitmap(utils.Drawables.getBitmapFromVectorDrawable(this, R.drawable.ic_user)))
-                    .position(curLatLng);
-            userMarker = mMap.addMarker(userMarkerOptions);
-            Log.d("Marker", "updateLocation: Marker Created");
-
-        }
-
+    private void focusOnUser(){
         if (mMap != null) {
-            Log.d("Location", "updateLocation: Lat -> " + mLocation.getLatitude() + "Lng -> " + mLocation.getLongitude());
             userMarkerOptions.position(curLatLng);
             mMap.moveCamera(CameraUpdateFactory.newLatLng(curLatLng));
         }
     }
 
-    private void setBranchLocations() {
+    private void initSPZones(){
+        branchArrayAdapter = new ArrayAdapter<Zone>(this, R.layout.support_simple_spinner_dropdown_item);
+        branchArrayAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
+        spZones = (Spinner) findViewById(R.id.spZones);
 
-        branchLatLng = new LatLng(23.793993, 90.404272);
+        spZones.setAdapter(branchArrayAdapter);
 
-        branchMarkerOptions = new MarkerOptions()
-                .title("Bonani Branch")
-                .icon(BitmapDescriptorFactory.fromBitmap(utils.Drawables.getBitmapFromVectorDrawable(this, R.drawable.ic_branch)))
-                .position(branchLatLng);
+        spZones.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                selectedZoneID = zonesList[position].getId();
+                requestBranchLocations();
+            }
 
-        branchMarker = mMap.addMarker(branchMarkerOptions);
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+    }
+
+    private void requestZones() {
+        DBBLLocationAPI.getInstance(this).requestAllZones(new Request<Zone[]>() {
+            @Override
+            public void onResponse(Zone[] resulList, boolean responseStatus) {
+                if (responseStatus) {
+                    zonesList = resulList;
+                    updateZones();
+                }
+            }
+        });
+    }
+
+    private  void updateZones() {
+        branchArrayAdapter.clear();
+        branchArrayAdapter.addAll(zonesList);
+    }
+
+    private void requestBranchLocations() {
+        DBBLLocationAPI.getInstance(this).requestLocations(new Request<model.Location[]>() {
+
+            @Override
+            public void onResponse(model.Location[] result, boolean responseStatus) {
+                branchLocations = result;
+                updateBranchLocations();
+            }
+        }, branchSearch, selectedZoneID);
+    }
+
+    private void updateBranchLocations() {
+        if (branchMarkers != null)
+            for (Marker branMarker : branchMarkers)
+                branMarker.remove();
+
+        branchMarkerOptions = new MarkerOptions[branchLocations.length];
+        branchMarkers = new Marker[branchLocations.length];
+        for (int i = 0; i < branchLocations.length; i++) {
+            LatLng branchLatLng = new LatLng(branchLocations[i].getLatitude(), branchLocations[i].getLongitude());
+            branchMarkerOptions[i] = new MarkerOptions()
+                    //.title(branchLocations[i].getName())
+                    .icon(BitmapDescriptorFactory.fromBitmap(utils.Drawables.getBitmapFromVectorDrawable(this, R.drawable.ic_branch)))
+                    .position(branchLatLng);
+
+            branchMarkers[i] = mMap.addMarker(branchMarkerOptions[i]);
+            branchMarkers[i].setTag(branchLocations[i]);
+        }
+        branchLocationArrayList.clear();
+        branchLocationArrayList.addAll(Arrays.asList(branchLocations));
+    }
+
+    private void focusOnBranch(model.Location location){
+        if (location.getId() == 0)
+            return;
+
+        focusBranchLocation = location;
+        focusBranchLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+        //showMapNotification();
+
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(focusBranchLatLng));
+        new ReadTask().execute(utils.Locations.getMapsApiDirectionsUrl(curLatLng, focusBranchLatLng));
+
+    }
+
+    private void showMapNotification() {
+        tvNotifBName.setText(focusBranchLocation.getName());
+        tvNotifBAddr.setText(focusBranchLocation.getAddress());
+        tvNotifBDistance.setText(String.format("%.2f m",focusBranchDistance/1000));
+        lyMapConstraintLayout.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -224,8 +443,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Log.d("Marker", "onMarkerClick: Drawing Polyline");
             //distancePolylineOptions = new PolylineOptions().add(curLatLng, branchLatLng);
             //distancePolyline = mMap.addPolyline(distancePolylineOptions);
-            new ReadTask().execute(utils.Locations.getMapsApiDirectionsUrl(curLatLng, branchLatLng));
 
+            focusOnBranch((model.Location) marker.getTag());
+
+            //new ReadTask().execute(utils.Locations.getMapsApiDirectionsUrl(curLatLng, marker.getPosition()));
+
+        } else {
+            if (distancePolyline != null)
+                distancePolyline.remove();
         }
 
         return false;
@@ -254,6 +479,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private class ParserTask extends
             AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
 
+        PathJSONParser parser;
+
         @Override
         protected List<List<HashMap<String, String>>> doInBackground(
                 String... jsonData) {
@@ -263,7 +490,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             try {
                 jObject = new JSONObject(jsonData[0]);
-                PathJSONParser parser = new PathJSONParser();
+                parser = new PathJSONParser();
                 routes = parser.parse(jObject);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -275,6 +502,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         protected void onPostExecute(List<List<HashMap<String, String>>> routes) {
             ArrayList<LatLng> points = null;
             distancePolylineOptions = null;
+
+            focusBranchDistance = parser.getDistance();
 
             // traversing through routes
             for (int i = 0; i < routes.size(); i++) {
@@ -294,11 +523,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 distancePolylineOptions.addAll(points);
                 distancePolylineOptions.width(10);
-                distancePolylineOptions.color(Color.BLUE);
+                distancePolylineOptions.color(getColor(R.color.colorPrimaryDark));
             }
             if(distancePolyline != null)
                 distancePolyline.remove();
             distancePolyline = mMap.addPolyline(distancePolylineOptions);
+            showMapNotification();
         }
     }
 

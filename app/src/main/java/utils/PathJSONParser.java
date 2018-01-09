@@ -4,6 +4,8 @@ package utils;
  * Created by tousifosman on 5/1/18.
  */
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +18,12 @@ import com.google.android.gms.maps.model.LatLng;
 
 public class PathJSONParser {
 
+    private double distance = 0;
+
+    public double getDistance() {
+        return distance;
+    }
+
     public List<List<HashMap<String, String>>> parse(JSONObject jObject) {
         List<List<HashMap<String, String>>> routes = new ArrayList<List<HashMap<String, String>>>();
         JSONArray jRoutes = null;
@@ -23,14 +31,19 @@ public class PathJSONParser {
         JSONArray jSteps = null;
         try {
             jRoutes = jObject.getJSONArray("routes");
+
             /** Traversing all routes */
             for (int i = 0; i < jRoutes.length(); i++) {
                 jLegs = ((JSONObject) jRoutes.get(i)).getJSONArray("legs");
                 List<HashMap<String, String>> path = new ArrayList<HashMap<String, String>>();
 
+
+
                 /** Traversing all legs */
                 for (int j = 0; j < jLegs.length(); j++) {
                     jSteps = ((JSONObject) jLegs.get(j)).getJSONArray("steps");
+
+                    distance += ((JSONObject) jLegs.get(j)).getJSONObject("distance").getDouble("value");
 
                     /** Traversing all steps */
                     for (int k = 0; k < jSteps.length(); k++) {

@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">DBBLLocationApp</string>
-    <string name="dbbl_location_api_url">http://10.80.50.218/DBBLLocationServer</string>
+    <string name="dbbl_location_api_url">http://tousifosman.duckdns.org:8080/DBBLLocationServer</string>
     <string name="dbbl_location_api_url_location">Locations</string>
     <string name="dbbl_location_api_url_zone">Zones</string>
     <string name="title_activity_maps">DBBL Map</string>
