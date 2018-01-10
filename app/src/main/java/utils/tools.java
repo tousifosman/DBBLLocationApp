@@ -39,12 +39,13 @@ public class tools {
     public static int findShortestLocation(Location[] locations, LatLng userLatLng) {
 
         int shortestLocationIndex = 0;
-        double previousLocationDistance = getEuclideanDistance(locations[0], userLatLng);
+        double shortestLocationDistance = getEuclideanDistance(locations[0], userLatLng);
         for (int i = 1; i < locations.length; i++) {
             double newLocationDistance = getEuclideanDistance(locations[i],userLatLng);
-            if (newLocationDistance < previousLocationDistance)
+            if (newLocationDistance < shortestLocationDistance) {
                 shortestLocationIndex = i;
-            previousLocationDistance = newLocationDistance;
+                shortestLocationDistance = newLocationDistance;
+            }
         }
         return shortestLocationIndex;
     }

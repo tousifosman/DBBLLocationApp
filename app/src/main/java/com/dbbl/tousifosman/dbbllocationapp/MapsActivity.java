@@ -218,7 +218,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View v) {
                 if (curLatLng != null && branchLocations != null && branchLocations.length > 0)
-                focusOnBranch(branchLocations[tools.findShortestLocation(branchLocations, curLatLng)]);
+                    focusOnBranch(branchLocations[tools.findShortestLocation(branchLocations, curLatLng)]);
             }
         });
 
@@ -340,6 +340,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (mMap != null) {
             userMarkerOptions.position(curLatLng);
             mMap.moveCamera(CameraUpdateFactory.newLatLng(curLatLng));
+            mMap.animateCamera( CameraUpdateFactory.zoomTo( 17.0f ) );
         }
     }
 
@@ -527,7 +528,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
             if(distancePolyline != null)
                 distancePolyline.remove();
-            distancePolyline = mMap.addPolyline(distancePolylineOptions);
+            if(distancePolylineOptions != null)
+                distancePolyline = mMap.addPolyline(distancePolylineOptions);
             showMapNotification();
         }
     }

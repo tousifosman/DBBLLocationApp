@@ -101,7 +101,7 @@
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:background="@drawable/common_google_signin_btn_icon_light_normal_background"
-        android:gravity="center"
+        android:gravity="top|right"
         android:orientation="horizontal"
         android:visibility="gone"
         map:layout_constraintBottom_toBottomOf="parent"
@@ -188,13 +188,13 @@
 
         <Button
             android:id="@+id/btnNotifBClose"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginEnd="16dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
             android:layout_weight="0"
-            android:background="@drawable/common_google_signin_btn_icon_light_normal_background"
+            android:background="@drawable/ic_close"
             android:elevation="0dp"
-            android:text="Close"
             map:layout_constraintBottom_toBottomOf="parent"
             map:layout_constraintEnd_toEndOf="parent"
             map:layout_constraintTop_toTopOf="parent" />
