@@ -4,22 +4,24 @@ import android.Manifest;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.location.Location;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
-import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SearchView;
@@ -54,7 +56,11 @@ import model.Zone;
 import utils.PathJSONParser;
 import utils.tools;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
+public class MapsActivity extends FragmentActivity
+        implements
+        OnMapReadyCallback,
+        GoogleMap.OnMarkerClickListener,
+        NotificationFragment.OnFragmentInteractionListener {
 
     private final String TAG = "MapsActivity";
 
@@ -89,14 +95,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private SearchBranchAdapter searchBranchAdapter;
     private ArrayList<model.Location> branchLocationArrayList;
 
-    private LinearLayout lyMapConstraintLayout;
+    private LinearLayout lyMapNotification;
     private TextView tvNotifBName;
     private TextView tvNotifBAddr;
     private TextView tvNotifBDistance;
     private Button btnNotifBClose;
 
+    private FrameLayout flMapNotificationContainer;
+    private NotificationFragment notificationFragment;
+
     private FloatingActionButton fabFocusUser;
     private FloatingActionButton fabFocusNearestBranch;
+
+    private int mShortAnimationDuration;
+    Animation notificationSlide_down;
+    Animation notificationSlide_up;
 
     /**
      * O is considered as the id for All zone
@@ -112,120 +125,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapsActivityInstance = this;
         setContentView(R.layout.activity_maps);
 
+        mShortAnimationDuration = getResources().getInteger(android.R.integer.config_shortAnimTime);
+
         initSPZones();
+        initMapNotification();
+        initSearchView();
+        initOnMapButtons();
+        initFgMapNotification();
 
-        /**
-         * Make entire Search View clickable
-         */
-        final SearchView searchView = (SearchView) findViewById(R.id.svLocations);
-        searchView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                searchView.setIconified(false);
-            }
-        });
+        if (requestUserPermission())
+            initMap();
+    }
 
-        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+    @Override
+    protected void onResume() {
+        super.onResume();
+        requestZones();
+        requestBranchLocations();
+        updateUserLocation();
+    }
 
-        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
-
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                searchBranchAdapter.filter(newText);
-                lyMapConstraintLayout.setVisibility(View.GONE);
-                searchResultListView.setVisibility(View.VISIBLE);
-                return false;
-            }
-        });
-
-        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
-            @Override
-            public boolean onClose() {
-                searchResultListView.setVisibility(View.GONE);
-                spZones.setLayoutParams(new LinearLayout.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT, AbsListView.LayoutParams.WRAP_CONTENT));
-                return false;
-            }
-        });
-
-        searchView.setOnSearchClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                spZones.setLayoutParams(new LinearLayout.LayoutParams(0, AbsListView.LayoutParams.WRAP_CONTENT));
-            }
-        });
-
-//        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
-//
-//            @Override
-//            public void onFocusChange(View v, boolean hasFocus) {
-//                if (hasFocus)
-//                    spZones.setLayoutParams(new LinearLayout.LayoutParams(0, AbsListView.LayoutParams.WRAP_CONTENT));
-//                else
-//                    spZones.setLayoutParams(new LinearLayout.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT, AbsListView.LayoutParams.WRAP_CONTENT));
-//            }
-//        });
-
-        searchResultListView = (ListView) findViewById(R.id.lvSearchResult);
-
-        branchLocationArrayList = new ArrayList<>();
-        searchBranchAdapter = new SearchBranchAdapter(this, branchLocationArrayList);
-        searchResultListView.setAdapter(searchBranchAdapter);
-
-        searchResultListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                tools.hideKeyboard(mapsActivityInstance);
-                searchResultListView.setVisibility(View.GONE);
-                focusOnBranch((model.Location) searchBranchAdapter.getItem(position));
-            }
-        });
-
-        /**
-         * Initialize Map Notification
-         */
-        lyMapConstraintLayout = findViewById(R.id.lyMapNotification);
-        tvNotifBName = findViewById(R.id.tvNotifBName);
-        tvNotifBAddr = findViewById(R.id.tvNotifBAddr);
-        tvNotifBDistance = findViewById(R.id.tvNotifBDistance);
-
-        btnNotifBClose = findViewById(R.id.btnNotifBClose);
-        btnNotifBClose.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                lyMapConstraintLayout.setVisibility(View.GONE);
-                //updateUserLocation();
-            }
-        });
-        /**
-         * Initialize FABs
-         */
-        fabFocusUser = findViewById(R.id.fabFocusUser);
-        fabFocusUser.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                updateUserLocation();
-            }
-        });
-
-        fabFocusNearestBranch = findViewById(R.id.fabFocusNearestBranch);
-        fabFocusNearestBranch.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (curLatLng != null && branchLocations != null && branchLocations.length > 0)
-                    focusOnBranch(branchLocations[tools.findShortestLocation(branchLocations, curLatLng)]);
-            }
-        });
-
-
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                || ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+    private boolean requestUserPermission() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET)
+                != PackageManager.PERMISSION_GRANTED) {
 
             ActivityCompat.requestPermissions(this,
                     new String[]{
@@ -240,17 +164,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
             Log.i("Permission", "onCreate: No Location Permission");
-            return;
+            return false;
         }
-        initMap();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        requestZones();
-        requestBranchLocations();
-        updateUserLocation();
+        return true;
     }
 
     @Override
@@ -296,6 +212,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         //updateUserLocation();
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
+    }
+
+    @Override
+    public void onNotificationClose() {
+        hideMapNotification();
     }
 
     private void updateUserLocation() {
@@ -344,6 +270,81 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    private void initSearchView() {
+        /**
+         * Make entire Search View clickable
+         */
+        final SearchView searchView = (SearchView) findViewById(R.id.svLocations);
+        searchView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchView.setIconified(false);
+            }
+        });
+
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                searchBranchAdapter.filter(newText);
+                lyMapNotification.setVisibility(View.GONE);
+                searchResultListView.setVisibility(View.VISIBLE);
+                return false;
+            }
+        });
+
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                searchResultListView.setVisibility(View.GONE);
+                spZones.setLayoutParams(new LinearLayout.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT, AbsListView.LayoutParams.WRAP_CONTENT));
+                return false;
+            }
+        });
+
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                spZones.setLayoutParams(new LinearLayout.LayoutParams(0, AbsListView.LayoutParams.WRAP_CONTENT));
+            }
+        });
+
+//        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
+//
+//            @Override
+//            public void onFocusChange(View v, boolean hasFocus) {
+//                if (hasFocus)
+//                    spZones.setLayoutParams(new LinearLayout.LayoutParams(0, AbsListView.LayoutParams.WRAP_CONTENT));
+//                else
+//                    spZones.setLayoutParams(new LinearLayout.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT, AbsListView.LayoutParams.WRAP_CONTENT));
+//            }
+//        });
+
+        searchResultListView = (ListView) findViewById(R.id.lvSearchResult);
+
+        branchLocationArrayList = new ArrayList<>();
+        searchBranchAdapter = new SearchBranchAdapter(this, branchLocationArrayList);
+        searchResultListView.setAdapter(searchBranchAdapter);
+
+        searchResultListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                tools.hideKeyboard(mapsActivityInstance);
+                searchResultListView.setVisibility(View.GONE);
+                focusOnBranch((model.Location) searchBranchAdapter.getItem(position));
+            }
+        });
+
+    }
+
     private void initSPZones(){
         branchArrayAdapter = new ArrayAdapter<Zone>(this, R.layout.support_simple_spinner_dropdown_item);
         branchArrayAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
@@ -388,13 +389,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             @Override
             public void onResponse(model.Location[] result, boolean responseStatus) {
-                branchLocations = result;
-                updateBranchLocations();
+                if (result != null) {
+                    branchLocations = result;
+                    updateBranchLocations();
+                } else
+                    Toast.makeText(mapsActivityInstance, "Server is under maintenance.", Toast.LENGTH_LONG).show();
             }
         }, branchSearch, selectedZoneID);
     }
 
     private void updateBranchLocations() {
+
+        if (branchLocations == null)
+            return;
+
         if (branchMarkers != null)
             for (Marker branMarker : branchMarkers)
                 branMarker.remove();
@@ -428,11 +436,119 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    private void initFgMapNotification(){
+        flMapNotificationContainer = findViewById(R.id.flMapNotificationContainer);
+        notificationFragment = (NotificationFragment) getSupportFragmentManager().findFragmentById(R.id.fgMapNotification);
+    }
+
+    private void initMapNotification() {
+
+        /**
+         * Initialize Map Notification
+         */
+        lyMapNotification = findViewById(R.id.lyMapNotification);
+        tvNotifBName = findViewById(R.id.tvNotifBName);
+        tvNotifBAddr = findViewById(R.id.tvNotifBAddr);
+        tvNotifBDistance = findViewById(R.id.tvNotifBDistance);
+
+        notificationSlide_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_down);
+        notificationSlide_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_up);
+
+        btnNotifBClose = findViewById(R.id.btnNotifBClose);
+        btnNotifBClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //lyMapNotification.setVisibility(View.GONE);
+                hideMapNotification();
+                //updateUserLocation();
+            }
+        });
+
+
+        notificationSlide_down.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {}
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                lyMapNotification.setVisibility(View.GONE);
+                flMapNotificationContainer.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+        });
+
+        notificationSlide_up.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                lyMapNotification.setVisibility(View.VISIBLE);
+                flMapNotificationContainer.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {}
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+        });
+    }
+
     private void showMapNotification() {
         tvNotifBName.setText(focusBranchLocation.getName());
         tvNotifBAddr.setText(focusBranchLocation.getAddress());
-        tvNotifBDistance.setText(String.format("%.2f m",focusBranchDistance/1000));
-        lyMapConstraintLayout.setVisibility(View.VISIBLE);
+        tvNotifBDistance.setText(String.format("%.2f km",focusBranchDistance/1000));
+//        lyMapNotification.animate().setDuration(mShortAnimationDuration)
+//                .alpha(1f)
+//                .setListener(new AnimatorListenerAdapter() {
+//                    @Override
+//                    public void onAnimationEnd(Animator animation) {
+//                        super.onAnimationEnd(animation);
+//                        //lyMapNotification.setVisibility(View.VISIBLE);
+//                    }
+//
+//                    @Override
+//                    public void onAnimationStart(Animator animation) {
+//                        super.onAnimationStart(animation);
+//                        lyMapNotification.setVisibility(View.VISIBLE);
+//                    }
+//                });
+        lyMapNotification.startAnimation(notificationSlide_up);
+
+    }
+
+    private void hideMapNotification() {
+//        lyMapNotification.animate().setListener(new AnimatorListenerAdapter() {
+//            @Override
+//            public void onAnimationEnd(Animator animation) {
+//                super.onAnimationEnd(animation);
+//                lyMapNotification.setVisibility(View.GONE);
+//            }
+//        });
+        lyMapNotification.startAnimation(notificationSlide_down);
+        flMapNotificationContainer.startAnimation(notificationSlide_down);
+    }
+
+    private void initOnMapButtons() {
+        /**
+         * Initialize FABs
+         */
+        fabFocusUser = findViewById(R.id.fabFocusUser);
+        fabFocusUser.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                updateUserLocation();
+            }
+        });
+
+        fabFocusNearestBranch = findViewById(R.id.fabFocusNearestBranch);
+        fabFocusNearestBranch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (curLatLng != null && branchLocations != null && branchLocations.length > 0)
+                    focusOnBranch(branchLocations[tools.findShortestLocation(branchLocations, curLatLng)]);
+            }
+        });
     }
 
     @Override
@@ -522,7 +638,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     points.add(position);
                 }
 
+                distancePolylineOptions.add(curLatLng);
                 distancePolylineOptions.addAll(points);
+                distancePolylineOptions.add(focusBranchLatLng);
                 distancePolylineOptions.width(10);
                 distancePolylineOptions.color(getColor(R.color.colorPrimaryDark));
             }

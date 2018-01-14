@@ -1,0 +1,108 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:auto="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/lyMapNotification"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bottom_slide_bg_white"
+    android:elevation="3dp"
+    android:gravity="top|right"
+    android:orientation="horizontal"
+    android:visibility="visible"
+    auto:layout_constraintBottom_toBottomOf="parent"
+    auto:layout_constraintEnd_toEndOf="parent"
+    auto:layout_constraintStart_toStartOf="parent"
+    tools:context="com.dbbl.tousifosman.dbbllocationapp.NotificationFragment">
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:layout_weight="1"
+        android:visibility="visible"
+        auto:layout_constraintBottom_toBottomOf="parent"
+        auto:layout_constraintEnd_toEndOf="parent"
+        auto:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            android:id="@+id/tvNotifBNameTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/branch_name_label"
+            auto:layout_constraintStart_toStartOf="parent"
+            auto:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvNotifBName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:text="@string/branch_name"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
+            auto:layout_constraintEnd_toEndOf="parent"
+            auto:layout_constraintHorizontal_bias="0.0"
+            auto:layout_constraintStart_toEndOf="@+id/tvNotifBNameTitle"
+            auto:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvNotifBAddrTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/branch_address_label"
+            auto:layout_constraintEnd_toEndOf="@+id/tvNotifBNameTitle"
+            auto:layout_constraintTop_toBottomOf="@+id/tvNotifBName" />
+
+        <TextView
+            android:id="@+id/tvNotifBAddr"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:text="@string/branch_address"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
+            auto:layout_constraintEnd_toEndOf="parent"
+            auto:layout_constraintHorizontal_bias="0.0"
+            auto:layout_constraintStart_toEndOf="@+id/tvNotifBAddrTitle"
+            auto:layout_constraintTop_toTopOf="@+id/tvNotifBAddrTitle" />
+
+        <TextView
+            android:id="@+id/tvNotifBDistanceTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/branch_distance_label"
+            auto:layout_constraintEnd_toEndOf="@+id/tvNotifBAddrTitle"
+            auto:layout_constraintTop_toBottomOf="@+id/tvNotifBAddr" />
+
+        <TextView
+            android:id="@+id/tvNotifBDistance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:text="@string/branch_distance"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
+            auto:layout_constraintBottom_toBottomOf="parent"
+            auto:layout_constraintEnd_toEndOf="parent"
+            auto:layout_constraintHorizontal_bias="0.0"
+            auto:layout_constraintStart_toEndOf="@+id/tvNotifBDistanceTitle"
+            auto:layout_constraintTop_toTopOf="@+id/tvNotifBDistanceTitle" />
+
+    </android.support.constraint.ConstraintLayout>
+
+    <Button
+        android:id="@+id/btnNotifFgBClose"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="0"
+        android:background="@drawable/ic_close"
+        android:elevation="0dp"
+        auto:layout_constraintBottom_toBottomOf="parent"
+        auto:layout_constraintEnd_toEndOf="parent"
+        auto:layout_constraintTop_toTopOf="parent" />
+
+</LinearLayout>
