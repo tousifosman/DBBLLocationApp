@@ -166,112 +166,27 @@
         </FrameLayout>
 
         <LinearLayout
-            android:id="@+id/lyMapNotification"
+            android:id="@+id/loader"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/bottom_slide_bg_white"
-            android:elevation="3dp"
-            android:gravity="top|right"
-            android:orientation="horizontal"
+            android:layout_height="0dp"
+            android:gravity="bottom"
             android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent">
+            app:layout_constraintBottom_toBottomOf="@+id/mapContainer"
+            app:layout_constraintEnd_toEndOf="@+id/mapContainer"
+            app:layout_constraintStart_toStartOf="@+id/mapContainer"
+            app:layout_constraintTop_toTopOf="@+id/mapContainer">
 
-            <android.support.constraint.ConstraintLayout
-                android:layout_width="match_parent"
+            <ProgressBar
+                android:id="@+id/progressBar2"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
                 android:layout_weight="1"
-                android:visibility="visible"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent">
-
-                <TextView
-                    android:id="@+id/tvNotifBNameTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="@string/branch_name_label"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <TextView
-                    android:id="@+id/tvNotifBName"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_marginStart="8dp"
-                    android:text="@string/branch_name"
-                    android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="0.0"
-                    app:layout_constraintStart_toEndOf="@+id/tvNotifBNameTitle"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <TextView
-                    android:id="@+id/tvNotifBAddrTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/branch_address_label"
-                    app:layout_constraintEnd_toEndOf="@+id/tvNotifBNameTitle"
-                    app:layout_constraintTop_toBottomOf="@+id/tvNotifBName" />
-
-                <TextView
-                    android:id="@+id/tvNotifBAddr"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_marginStart="8dp"
-                    android:text="@string/branch_address"
-                    android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="0.0"
-                    app:layout_constraintStart_toEndOf="@+id/tvNotifBAddrTitle"
-                    app:layout_constraintTop_toTopOf="@+id/tvNotifBAddrTitle" />
-
-                <TextView
-                    android:id="@+id/tvNotifBDistanceTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/branch_distance_label"
-                    app:layout_constraintEnd_toEndOf="@+id/tvNotifBAddrTitle"
-                    app:layout_constraintTop_toBottomOf="@+id/tvNotifBAddr" />
-
-                <TextView
-                    android:id="@+id/tvNotifBDistance"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_marginStart="8dp"
-                    android:text="@string/branch_distance"
-                    android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="0.0"
-                    app:layout_constraintStart_toEndOf="@+id/tvNotifBDistanceTitle"
-                    app:layout_constraintTop_toTopOf="@+id/tvNotifBDistanceTitle" />
-
-            </android.support.constraint.ConstraintLayout>
-
-            <Button
-                android:id="@+id/btnNotifBClose"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_marginEnd="8dp"
-                android:layout_marginTop="8dp"
-                android:layout_weight="0"
-                android:background="@drawable/ic_close"
-                android:elevation="0dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
+                android:indeterminate="true"
+                android:layout_marginBottom="-8dp"
+                android:layout_marginTop="-4dp"/>
         </LinearLayout>
+
     </android.support.constraint.ConstraintLayout>
 
     <android.support.design.widget.NavigationView

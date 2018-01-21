@@ -7,6 +7,11 @@ import android.view.inputmethod.InputMethodManager;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedList;
+
 import model.Location;
 
 /**
@@ -41,6 +46,7 @@ public class tools {
         int shortestLocationIndex = 0;
         double shortestLocationDistance = getEuclideanDistance(locations[0], userLatLng);
         for (int i = 1; i < locations.length; i++) {
+            if (locations[i] == null) continue;
             double newLocationDistance = getEuclideanDistance(locations[i],userLatLng);
             if (newLocationDistance < shortestLocationDistance) {
                 shortestLocationIndex = i;
@@ -48,6 +54,20 @@ public class tools {
             }
         }
         return shortestLocationIndex;
+        //return  findShortestLocation(new LinkedList<>(Arrays.asList(locations)), userLatLng);
+    }
+
+    public static Location[] findNearbyBranch(Location[] locations, LatLng userLatLng){
+
+        Location[] nearbyBranch = new Location[5];
+
+        for (int i = 0; i < 5 && i < locations.length; i++) {
+            int shortestLocationIndex = findShortestLocation(locations, userLatLng);
+            nearbyBranch[i] = locations[shortestLocationIndex];
+            locations[shortestLocationIndex] = null;
+        }
+
+        return nearbyBranch;
     }
 
 }

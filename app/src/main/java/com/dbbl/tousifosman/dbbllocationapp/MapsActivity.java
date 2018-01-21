@@ -67,6 +67,10 @@ public class MapsActivity extends FragmentActivity
         NotificationFragment.OnFragmentInteractionListener,
         NavigationView.OnNavigationItemSelectedListener {
 
+    public interface ACTIVITY_REQUEST {
+        int NEARBY = 1;
+    }
+
     private final String TAG = "MapsActivity";
 
     private MapsActivity mapsActivityInstance;
@@ -109,11 +113,13 @@ public class MapsActivity extends FragmentActivity
     private SearchBranchAdapter searchBranchAdapter;
     private ArrayList<model.Location> branchLocationArrayList;
 
+/*
     private LinearLayout lyMapNotification;
     private TextView tvNotifBName;
     private TextView tvNotifBAddr;
     private TextView tvNotifBDistance;
     private Button btnNotifBClose;
+*/
 
     private FrameLayout flMapNotificationContainer;
     private NotificationFragment notificationFragment;
@@ -122,8 +128,10 @@ public class MapsActivity extends FragmentActivity
     private FloatingActionButton fabFocusNearestBranch;
 
     private int mShortAnimationDuration;
-    Animation notificationSlide_down;
-    Animation notificationSlide_up;
+    private Animation notificationSlide_down;
+    private Animation notificationSlide_up;
+
+    private LinearLayout loader;
 
     /**
      * O is considered as the id for All zone
@@ -150,6 +158,14 @@ public class MapsActivity extends FragmentActivity
 
         if (requestUserPermission())
             initMap();
+
+        updateUserLocation();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        //updateUserLocation();
     }
 
     @Override
@@ -157,7 +173,6 @@ public class MapsActivity extends FragmentActivity
         super.onResume();
         requestZones();
         requestBranchLocations();
-        updateUserLocation();
     }
 
     private boolean requestUserPermission() {
@@ -270,11 +285,36 @@ public class MapsActivity extends FragmentActivity
             Intent intent = new Intent(this, NearbyActivity.class);
             intent.putExtra("branchLocationArrayList", branchLocations);
             intent.putExtra("curLatLng", curLatLng);
+            startActivityForResult(intent, ACTIVITY_REQUEST.NEARBY);
+            //startActivity(intent);
+        } else if (id == R.id.nav_call_us) {
+
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            intent.setData(Uri.parse("tel:12345678910"));
             startActivity(intent);
+
+        } else if (id == R.id.nav_mail_us) {
+            Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
+                    "mailto","mail@dutchbanglabank.com", null));
+            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Issue about Location App");
+            emailIntent.putExtra(Intent.EXTRA_TEXT, "");
+            startActivity(emailIntent);
         }
 
         closeDrawer();
         return true;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == ACTIVITY_REQUEST.NEARBY
+                && requestCode == NearbyActivity.ACTIVITY_RESPONSE.SUCCESS) {
+
+            focusOnBranch((model.Location) data.getExtras().getSerializable("focusBranchLocation"));
+
+        }
     }
 
     @Override
@@ -299,14 +339,13 @@ public class MapsActivity extends FragmentActivity
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
+        //showLoader();
         mFusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
             @Override
             public void onSuccess(Location location) {
-                Log.i("Location", "initMap: Location Found");
                 if (location != null) {
                     mLocation = location;
                     //updateLocation();
-                    Log.i("Location", "In update location");
                     curLatLng = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
 
                     if (userMarkerOptions == null) {
@@ -316,10 +355,10 @@ public class MapsActivity extends FragmentActivity
                                 .icon(BitmapDescriptorFactory.fromBitmap(utils.Drawables.getBitmapFromVectorDrawable(mapsActivityInstance, R.drawable.ic_user)))
                                 .position(curLatLng);
                         userMarker = mMap.addMarker(userMarkerOptions);
-                        Log.d("Marker", "updateLocation: Marker Created");
 
                     }
                     focusOnUser();
+                    //hideLoader();
                 }
             }
         });
@@ -473,12 +512,14 @@ public class MapsActivity extends FragmentActivity
     }
 
     private void requestZones() {
+        //showLoader();
         DBBLLocationAPI.getInstance(this).requestAllZones(new Request<Zone[]>() {
             @Override
             public void onResponse(Zone[] resulList, boolean responseStatus) {
                 if (responseStatus) {
                     zonesList = resulList;
                     updateZones();
+                    //hideLoader();
                 }
             }
         });
@@ -490,6 +531,7 @@ public class MapsActivity extends FragmentActivity
     }
 
     private void requestBranchLocations() {
+        showLoader();
         DBBLLocationAPI.getInstance(this).requestLocations(new Request<model.Location[]>() {
 
             @Override
@@ -499,6 +541,7 @@ public class MapsActivity extends FragmentActivity
                     updateBranchLocations();
                 } else
                     Toast.makeText(mapsActivityInstance, "Server is under maintenance.", Toast.LENGTH_LONG).show();
+                hideLoader();
             }
         }, branchSearch, selectedZoneID);
     }
@@ -552,15 +595,15 @@ public class MapsActivity extends FragmentActivity
         /**
          * Initialize Map Notification
          */
-        lyMapNotification = findViewById(R.id.lyMapNotification);
+        /*lyMapNotification = findViewById(R.id.lyMapNotification);
         tvNotifBName = findViewById(R.id.tvNotifBName);
         tvNotifBAddr = findViewById(R.id.tvNotifBAddr);
-        tvNotifBDistance = findViewById(R.id.tvNotifBDistance);
+        tvNotifBDistance = findViewById(R.id.tvNotifBDistance);*/
 
         notificationSlide_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_down);
         notificationSlide_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_up);
 
-        btnNotifBClose = findViewById(R.id.btnNotifBClose);
+        /*btnNotifBClose = findViewById(R.id.btnNotifBClose);
         btnNotifBClose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -568,7 +611,7 @@ public class MapsActivity extends FragmentActivity
                 hideMapNotification();
                 //updateUserLocation();
             }
-        });
+        });*/
 
 
         notificationSlide_down.setAnimationListener(new Animation.AnimationListener() {
@@ -584,7 +627,6 @@ public class MapsActivity extends FragmentActivity
             @Override
             public void onAnimationRepeat(Animation animation) {}
         });
-
         notificationSlide_up.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
@@ -598,12 +640,14 @@ public class MapsActivity extends FragmentActivity
             @Override
             public void onAnimationRepeat(Animation animation) {}
         });
+
+        loader = findViewById(R.id.loader);
     }
 
     private void showMapNotification() {
-        tvNotifBName.setText(focusBranchLocation.getName());
+        /*tvNotifBName.setText(focusBranchLocation.getName());
         tvNotifBAddr.setText(focusBranchLocation.getAddress());
-        tvNotifBDistance.setText(String.format("%.2f km",focusBranchDistance/1000));
+        tvNotifBDistance.setText(String.format("%.2f km",focusBranchDistance/1000));*/
 
         notificationFragment.updateNotification(
                 focusBranchLocation.getName(),
@@ -638,8 +682,16 @@ public class MapsActivity extends FragmentActivity
 //                lyMapNotification.setVisibility(View.GONE);
 //            }
 //        });
-        lyMapNotification.startAnimation(notificationSlide_down);
+        //lyMapNotification.startAnimation(notificationSlide_down);
         flMapNotificationContainer.startAnimation(notificationSlide_down);
+    }
+
+    private void showLoader() {
+        loader.setVisibility(View.VISIBLE);
+    }
+
+    private void hideLoader() {
+        loader.setVisibility(View.GONE);
     }
 
     private void initOnMapButtons() {
@@ -687,6 +739,13 @@ public class MapsActivity extends FragmentActivity
     }
 
     private class ReadTask extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            showLoader();
+        }
+
         @Override
         protected String doInBackground(String... url) {
             String data = "";
@@ -703,6 +762,7 @@ public class MapsActivity extends FragmentActivity
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
             new ParserTask().execute(result);
+            hideLoader();
         }
     }
 
