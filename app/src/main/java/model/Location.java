@@ -1,10 +1,12 @@
 package model;
 
+import java.io.Serializable;
+
 /**
  * Created by DBBL on 1/8/2018.
  */
 
-public class Location {
+public class Location implements Serializable{
 
     private int id;
     private String name;

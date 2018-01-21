@@ -3,21 +3,25 @@ package com.dbbl.tousifosman.dbbllocationapp;
 import android.Manifest;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -60,11 +64,21 @@ public class MapsActivity extends FragmentActivity
         implements
         OnMapReadyCallback,
         GoogleMap.OnMarkerClickListener,
-        NotificationFragment.OnFragmentInteractionListener {
+        NotificationFragment.OnFragmentInteractionListener,
+        NavigationView.OnNavigationItemSelectedListener {
 
     private final String TAG = "MapsActivity";
 
     private MapsActivity mapsActivityInstance;
+
+    private DrawerLayout drawerLayout;
+    private NavigationView navView;
+    private Button btnDrawer;
+
+    private LinearLayout lySVContainer;
+    private SearchView searchView;
+    private LinearLayout.LayoutParams lpSVInitial;
+    private LinearLayout.LayoutParams lpSVFocused;
 
     private GoogleMap mMap;
 
@@ -132,6 +146,7 @@ public class MapsActivity extends FragmentActivity
         initSearchView();
         initOnMapButtons();
         initFgMapNotification();
+        initDrawerLayout();
 
         if (requestUserPermission())
             initMap();
@@ -184,6 +199,15 @@ public class MapsActivity extends FragmentActivity
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            closeDrawer();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -212,6 +236,45 @@ public class MapsActivity extends FragmentActivity
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         //updateUserLocation();
+    }
+
+    private void initDrawerLayout(){
+        drawerLayout = findViewById(R.id.drawer_layout);
+
+        navView = findViewById(R.id.navView);
+        navView.setNavigationItemSelectedListener(this);
+
+        btnDrawer = findViewById(R.id.btnDrawer);
+        btnDrawer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openDrawer();
+            }
+        });
+    }
+
+    private void openDrawer() {
+        drawerLayout.openDrawer(GravityCompat.START);
+    }
+
+    private void closeDrawer() {
+        drawerLayout.closeDrawer(GravityCompat.START);
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        Log.d(TAG, "onNavigationItemSelected: ");
+        if (id == R.id.nav_nearby) {
+            // Handle the camera action
+            Intent intent = new Intent(this, NearbyActivity.class);
+            intent.putExtra("branchLocationArrayList", branchLocations);
+            intent.putExtra("curLatLng", curLatLng);
+            startActivity(intent);
+        }
+
+        closeDrawer();
+        return true;
     }
 
     @Override
@@ -274,10 +337,24 @@ public class MapsActivity extends FragmentActivity
         /**
          * Make entire Search View clickable
          */
-        final SearchView searchView = (SearchView) findViewById(R.id.svLocations);
-        searchView.setOnClickListener(new View.OnClickListener() {
+        searchView = findViewById(R.id.svLocations);
+
+        lpSVInitial = (LinearLayout.LayoutParams) searchView.getLayoutParams();
+        lpSVFocused = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lpSVFocused.setMargins(
+                lpSVInitial.leftMargin,
+                lpSVInitial.topMargin,
+                lpSVInitial.rightMargin,
+                lpSVInitial.bottomMargin);
+
+        /**
+         * Make Search Container Clickable
+         */
+        lySVContainer = findViewById(R.id.lySVContainer);
+        lySVContainer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                openSearchView();
                 searchView.setIconified(false);
             }
         });
@@ -289,23 +366,38 @@ public class MapsActivity extends FragmentActivity
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                return false;
+                searchView.setQuery("", false);
+                searchView.setIconified(true);
+                searchView.setFocusable(false);
+                searchView.clearFocus();
+                Log.d(TAG, "onQueryTextSubmit: ");
+                return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
                 searchBranchAdapter.filter(newText);
-                lyMapNotification.setVisibility(View.GONE);
+                flMapNotificationContainer.setVisibility(View.GONE);
                 searchResultListView.setVisibility(View.VISIBLE);
+
                 return false;
             }
         });
 
+
+
         searchView.setOnCloseListener(new SearchView.OnCloseListener() {
             @Override
             public boolean onClose() {
-                searchResultListView.setVisibility(View.GONE);
-                spZones.setLayoutParams(new LinearLayout.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT, AbsListView.LayoutParams.WRAP_CONTENT));
+                closeSearchView();
+//                searchView.clearFocus();
+//                searchView.setFocusable(false);
+//                searchView.onWindowFocusChanged(false);
+
+                //Open and close the  keyboard
+                /*InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.toggleSoftInput(InputMethodManager.RESULT_HIDDEN, 0);
+                imm.toggleSoftInput(InputMethodManager.RESULT_HIDDEN, 0);*/
                 return false;
             }
         });
@@ -313,9 +405,11 @@ public class MapsActivity extends FragmentActivity
         searchView.setOnSearchClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                spZones.setLayoutParams(new LinearLayout.LayoutParams(0, AbsListView.LayoutParams.WRAP_CONTENT));
+            openSearchView();
             }
         });
+
+
 
 //        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
 //
@@ -328,7 +422,7 @@ public class MapsActivity extends FragmentActivity
 //            }
 //        });
 
-        searchResultListView = (ListView) findViewById(R.id.lvSearchResult);
+        searchResultListView = findViewById(R.id.lvSearchResult);
 
         branchLocationArrayList = new ArrayList<>();
         searchBranchAdapter = new SearchBranchAdapter(this, branchLocationArrayList);
@@ -345,10 +439,23 @@ public class MapsActivity extends FragmentActivity
 
     }
 
+    private void openSearchView(){
+        searchView.setLayoutParams(lpSVFocused);
+        spZones.setVisibility(View.GONE);
+        btnDrawer.setVisibility(View.GONE);
+    }
+
+    private void closeSearchView(){
+        searchResultListView.setVisibility(View.GONE);
+        searchView.setLayoutParams(lpSVInitial);
+        spZones.setVisibility(View.VISIBLE);
+        btnDrawer.setVisibility(View.VISIBLE);
+    }
+
     private void initSPZones(){
-        branchArrayAdapter = new ArrayAdapter<Zone>(this, R.layout.support_simple_spinner_dropdown_item);
+        branchArrayAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item);
         branchArrayAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
-        spZones = (Spinner) findViewById(R.id.spZones);
+        spZones = findViewById(R.id.spZones);
 
         spZones.setAdapter(branchArrayAdapter);
 
@@ -360,9 +467,7 @@ public class MapsActivity extends FragmentActivity
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
 
     }
@@ -432,7 +537,8 @@ public class MapsActivity extends FragmentActivity
         //showMapNotification();
 
         mMap.moveCamera(CameraUpdateFactory.newLatLng(focusBranchLatLng));
-        new ReadTask().execute(utils.Locations.getMapsApiDirectionsUrl(curLatLng, focusBranchLatLng));
+        if (curLatLng != null)
+            new ReadTask().execute(utils.Locations.getMapsApiDirectionsUrl(curLatLng, focusBranchLatLng));
 
     }
 
@@ -471,7 +577,7 @@ public class MapsActivity extends FragmentActivity
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                lyMapNotification.setVisibility(View.GONE);
+                //lyMapNotification.setVisibility(View.GONE);
                 flMapNotificationContainer.setVisibility(View.GONE);
             }
 
@@ -482,7 +588,7 @@ public class MapsActivity extends FragmentActivity
         notificationSlide_up.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
-                lyMapNotification.setVisibility(View.VISIBLE);
+                //lyMapNotification.setVisibility(View.VISIBLE);
                 flMapNotificationContainer.setVisibility(View.VISIBLE);
             }
 
@@ -498,6 +604,13 @@ public class MapsActivity extends FragmentActivity
         tvNotifBName.setText(focusBranchLocation.getName());
         tvNotifBAddr.setText(focusBranchLocation.getAddress());
         tvNotifBDistance.setText(String.format("%.2f km",focusBranchDistance/1000));
+
+        notificationFragment.updateNotification(
+                focusBranchLocation.getName(),
+                focusBranchLocation.getAddress(),
+                focusBranchDistance
+        );
+
 //        lyMapNotification.animate().setDuration(mShortAnimationDuration)
 //                .alpha(1f)
 //                .setListener(new AnimatorListenerAdapter() {
@@ -513,8 +626,8 @@ public class MapsActivity extends FragmentActivity
 //                        lyMapNotification.setVisibility(View.VISIBLE);
 //                    }
 //                });
-        lyMapNotification.startAnimation(notificationSlide_up);
-
+        //lyMapNotification.startAnimation(notificationSlide_up);
+        flMapNotificationContainer.startAnimation(notificationSlide_up);
     }
 
     private void hideMapNotification() {

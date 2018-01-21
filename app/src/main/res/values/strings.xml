@@ -14,6 +14,15 @@
     <string name="branch_distance_label">Distance</string>
     <string name="branch_distance">0.0 km</string>
 
+    <!--Near by activity-->
+    <string name="av_nearby_label">Nearby Branches</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_test_navigation_drawer">TestNavigationDrawer</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
 </resources>

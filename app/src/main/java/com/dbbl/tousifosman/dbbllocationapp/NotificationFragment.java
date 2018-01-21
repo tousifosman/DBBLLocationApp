@@ -80,6 +80,7 @@ public class NotificationFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_notification, container, false);
 
         initBtnNotifClose(view);
+        initTextViews(view);
 
         // Inflate the layout for this fragment
         return view;
@@ -109,6 +110,12 @@ public class NotificationFragment extends Fragment {
         mListener = null;
     }
 
+    private void initTextViews(View view) {
+        tvNotifBName = view.findViewById(R.id.tvNotifBName);
+        tvNotifBAddr = view.findViewById(R.id.tvNotifBAddr);
+        tvNotifBDistance = view.findViewById(R.id.tvNotifBDistance);
+    }
+
     private void initBtnNotifClose(View view) {
         btnClose = view.findViewById(R.id.btnNotifFgBClose);
         btnClose.setOnClickListener(new View.OnClickListener() {
@@ -117,6 +124,12 @@ public class NotificationFragment extends Fragment {
                 mListener.onNotificationClose();
             }
         });
+    }
+
+    public void updateNotification(String name, String address, Double distance){
+        tvNotifBName.setText(name);
+        tvNotifBAddr.setText(address);
+        tvNotifBDistance.setText(String.format("%.2f km",distance/1000));
     }
 
     /**

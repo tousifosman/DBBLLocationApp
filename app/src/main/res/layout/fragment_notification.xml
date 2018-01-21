@@ -28,6 +28,7 @@
             android:id="@+id/tvNotifBNameTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
             android:text="@string/branch_name_label"
             auto:layout_constraintStart_toStartOf="parent"
             auto:layout_constraintTop_toTopOf="parent" />
