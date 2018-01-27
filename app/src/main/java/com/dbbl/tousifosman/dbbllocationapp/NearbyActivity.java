@@ -20,7 +20,7 @@ public class NearbyActivity extends AppCompatActivity implements AdapterView.OnI
 
     public interface ACTIVITY_RESPONSE {
         int SUCCESS = 1;
-    };
+    }
 
     private model.Location[] branchLocations;
     private model.Location[] nearbyBranchLocations;

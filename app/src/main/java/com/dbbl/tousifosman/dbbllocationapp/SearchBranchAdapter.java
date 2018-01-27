@@ -60,7 +60,7 @@ public class SearchBranchAdapter extends BaseAdapter {
             holder = new ViewHolder();
             view = inflater.inflate(R.layout.search_result_item, null);
             // Locate the TextViews in listview_item.xml
-            holder.name = (TextView) view.findViewById(R.id.name);
+            holder.name = view.findViewById(R.id.name);
             view.setTag(holder);
         } else {
             holder = (ViewHolder) view.getTag();

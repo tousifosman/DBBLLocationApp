@@ -5,5 +5,5 @@ package model;
  */
 
 public interface Request<ResultType> {
-    public void onResponse(ResultType result, boolean responseStatus);
+    void onResponse(ResultType result, boolean responseStatus);
 }

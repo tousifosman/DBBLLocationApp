@@ -356,6 +356,8 @@ public class MapsActivity extends FragmentActivity
                                 .position(curLatLng);
                         userMarker = mMap.addMarker(userMarkerOptions);
 
+                    } else {
+                        userMarker.setPosition(curLatLng);
                     }
                     focusOnUser();
                     //hideLoader();
