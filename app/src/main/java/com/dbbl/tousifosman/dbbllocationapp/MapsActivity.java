@@ -30,7 +30,6 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -113,21 +112,12 @@ public class MapsActivity extends FragmentActivity
     private SearchBranchAdapter searchBranchAdapter;
     private ArrayList<model.Location> branchLocationArrayList;
 
-/*
-    private LinearLayout lyMapNotification;
-    private TextView tvNotifBName;
-    private TextView tvNotifBAddr;
-    private TextView tvNotifBDistance;
-    private Button btnNotifBClose;
-*/
-
     private FrameLayout flMapNotificationContainer;
     private NotificationFragment notificationFragment;
 
     private FloatingActionButton fabFocusUser;
     private FloatingActionButton fabFocusNearestBranch;
 
-    private int mShortAnimationDuration;
     private Animation notificationSlide_down;
     private Animation notificationSlide_up;
 
@@ -146,8 +136,6 @@ public class MapsActivity extends FragmentActivity
 
         mapsActivityInstance = this;
         setContentView(R.layout.activity_maps);
-
-        mShortAnimationDuration = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
         initSPZones();
         initMapNotification();
@@ -178,21 +166,17 @@ public class MapsActivity extends FragmentActivity
     private boolean requestUserPermission() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET)
                 != PackageManager.PERMISSION_GRANTED) {
 
             ActivityCompat.requestPermissions(this,
                     new String[]{
                             Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
                             Manifest.permission.INTERNET}, 1);
 
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             Log.i("Permission", "onCreate: No Location Permission");
             return false;
         }
@@ -207,10 +191,10 @@ public class MapsActivity extends FragmentActivity
                 if (grantResults.length > 0)
                     initMap();
                 else
-                    Toast.makeText(this, "Location Permission Not Given", Toast.LENGTH_LONG);
+                    Toast.makeText(this, "Location Permission Not Given", Toast.LENGTH_LONG).show();
                 break;
             default:
-                Toast.makeText(this, "Permission Error", Toast.LENGTH_LONG);
+                Toast.makeText(this, "Permission Error", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -330,16 +314,8 @@ public class MapsActivity extends FragmentActivity
     private void updateUserLocation() {
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return;
         }
-        //showLoader();
         mFusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
             @Override
             public void onSuccess(Location location) {
@@ -375,7 +351,7 @@ public class MapsActivity extends FragmentActivity
     }
 
     private void initSearchView() {
-        /**
+        /*
          * Make entire Search View clickable
          */
         searchView = findViewById(R.id.svLocations);
@@ -388,7 +364,7 @@ public class MapsActivity extends FragmentActivity
                 lpSVInitial.rightMargin,
                 lpSVInitial.bottomMargin);
 
-        /**
+        /*
          * Make Search Container Clickable
          */
         lySVContainer = findViewById(R.id.lySVContainer);
@@ -402,7 +378,9 @@ public class MapsActivity extends FragmentActivity
 
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
 
-        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+        if (searchManager != null) {
+            searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+        }
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -431,14 +409,6 @@ public class MapsActivity extends FragmentActivity
             @Override
             public boolean onClose() {
                 closeSearchView();
-//                searchView.clearFocus();
-//                searchView.setFocusable(false);
-//                searchView.onWindowFocusChanged(false);
-
-                //Open and close the  keyboard
-                /*InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.toggleSoftInput(InputMethodManager.RESULT_HIDDEN, 0);
-                imm.toggleSoftInput(InputMethodManager.RESULT_HIDDEN, 0);*/
                 return false;
             }
         });
@@ -449,19 +419,6 @@ public class MapsActivity extends FragmentActivity
             openSearchView();
             }
         });
-
-
-
-//        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
-//
-//            @Override
-//            public void onFocusChange(View v, boolean hasFocus) {
-//                if (hasFocus)
-//                    spZones.setLayoutParams(new LinearLayout.LayoutParams(0, AbsListView.LayoutParams.WRAP_CONTENT));
-//                else
-//                    spZones.setLayoutParams(new LinearLayout.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT, AbsListView.LayoutParams.WRAP_CONTENT));
-//            }
-//        });
 
         searchResultListView = findViewById(R.id.lvSearchResult);
 
@@ -592,58 +549,42 @@ public class MapsActivity extends FragmentActivity
         notificationFragment = (NotificationFragment) getSupportFragmentManager().findFragmentById(R.id.fgMapNotification);
     }
 
+    /**
+     * Initialize Map Notification
+     */
     private void initMapNotification() {
 
-        /**
-         * Initialize Map Notification
-         */
-        /*lyMapNotification = findViewById(R.id.lyMapNotification);
-        tvNotifBName = findViewById(R.id.tvNotifBName);
-        tvNotifBAddr = findViewById(R.id.tvNotifBAddr);
-        tvNotifBDistance = findViewById(R.id.tvNotifBDistance);*/
+    notificationSlide_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_down);
+    notificationSlide_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_up);
 
-        notificationSlide_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_down);
-        notificationSlide_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_up);
+    notificationSlide_down.setAnimationListener(new Animation.AnimationListener() {
+        @Override
+        public void onAnimationStart(Animation animation) {}
 
-        /*btnNotifBClose = findViewById(R.id.btnNotifBClose);
-        btnNotifBClose.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //lyMapNotification.setVisibility(View.GONE);
-                hideMapNotification();
-                //updateUserLocation();
-            }
-        });*/
+        @Override
+        public void onAnimationEnd(Animation animation) {
+            //lyMapNotification.setVisibility(View.GONE);
+            flMapNotificationContainer.setVisibility(View.GONE);
+        }
 
+        @Override
+        public void onAnimationRepeat(Animation animation) {}
+    });
+    notificationSlide_up.setAnimationListener(new Animation.AnimationListener() {
+        @Override
+        public void onAnimationStart(Animation animation) {
+            //lyMapNotification.setVisibility(View.VISIBLE);
+            flMapNotificationContainer.setVisibility(View.VISIBLE);
+        }
 
-        notificationSlide_down.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {}
+        @Override
+        public void onAnimationEnd(Animation animation) {}
 
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                //lyMapNotification.setVisibility(View.GONE);
-                flMapNotificationContainer.setVisibility(View.GONE);
-            }
+        @Override
+        public void onAnimationRepeat(Animation animation) {}
+    });
 
-            @Override
-            public void onAnimationRepeat(Animation animation) {}
-        });
-        notificationSlide_up.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-                //lyMapNotification.setVisibility(View.VISIBLE);
-                flMapNotificationContainer.setVisibility(View.VISIBLE);
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {}
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {}
-        });
-
-        loader = findViewById(R.id.loader);
+    loader = findViewById(R.id.loader);
     }
 
     private void showMapNotification() {
@@ -696,10 +637,10 @@ public class MapsActivity extends FragmentActivity
         loader.setVisibility(View.GONE);
     }
 
+    /**
+     * Initialize FABs
+     */
     private void initOnMapButtons() {
-        /**
-         * Initialize FABs
-         */
         fabFocusUser = findViewById(R.id.fabFocusUser);
         fabFocusUser.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -792,14 +733,13 @@ public class MapsActivity extends FragmentActivity
 
         @Override
         protected void onPostExecute(List<List<HashMap<String, String>>> routes) {
-            ArrayList<LatLng> points = null;
             distancePolylineOptions = null;
 
             focusBranchDistance = parser.getDistance();
 
             // traversing through routes
             for (int i = 0; i < routes.size(); i++) {
-                points = new ArrayList<LatLng>();
+                ArrayList<LatLng> points = new ArrayList<>();
                 distancePolylineOptions = new PolylineOptions();
                 List<HashMap<String, String>> path = routes.get(i);
 
